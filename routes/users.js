@@ -24,7 +24,7 @@ router.put("/:id", async(req,res)=>{
     }else{
         return res.status(403).json("You can update only your account")
     }
-})
+});
 
 //delete user
 router.delete("/:id", async(req,res)=>{
@@ -38,7 +38,7 @@ router.delete("/:id", async(req,res)=>{
     }else{
         return res.status(403).json("You can delete only your account")
     }
-})
+});
 
 //get a user
 router.get("/:id", async(req,res)=>{
@@ -49,10 +49,48 @@ router.get("/:id", async(req,res)=>{
     }catch(err){
         res.status(500).json(err)
     }
-})
-//follow a user
-//unfollow a user
+});
 
+//follow a user
+router.put("/:id/follow", async(req,res)=>{
+    if(req.body.id !== req.params.id){
+        try{
+            const user = await User.findById(req.params.id); //target user(to be followed)
+            const currUser = await User.findById(req.body.userId); //follower
+            if(!user.followers.includes(req.body.userId)){ // if current user is not in user's followers list
+                await user.updateOne({$push:{followers:req.body.userId}}) //add current user in user's follower list
+                await currUser.updateOne({$push:{following:req.params.id}}); // add user in current user's following list
+                res.status(200).json("user has been followed");
+            }else{
+                res.status(403).json("you already follow this user")
+            }
+        }catch(err){
+            res.status(500).json(err)
+        }
+    }else{
+        res.status(403).json("you cant follow yourself")
+    }
+})
+//unfollow a user
+router.put("/:id/unfollow", async(req,res)=>{
+    if(req.body.id !== req.params.id){
+        try{
+            const user = await User.findById(req.params.id);
+            const currUser = await User.findById(req.body.id); //58:00
+            if(user.followers.includes(req.body.userId)){
+                await user.updateOne({$pull:{followers:req.body.userId}})
+                await currUser.updateOne({$pull:{following:req.params.id}})
+                res.status(200).json("user has been unfollowed")
+            }else{
+                res.status(403).json("you dont follow this user")
+            }
+        }catch(err){
+            res.status(500).json(err)
+        }
+    } else{
+        res.status(403).json("you cant unfollow yourself");
+    }
+})
 
 // router.get("/", (req,res)=>{
 //     res.send("hey its user route")
